@@ -1,20 +1,15 @@
-import '../../requests/usersRequest'
-import '../../requests/loginRequest'
 import '../../requests/productRequest'
+import '../../support/dataSet/makeDataSet'
+import userPostRequestBody from '../../support/requestBodies/userPostRequestBody'
+import productPostRequestBody from '../../support/requestBodies/productPostRequestBody'
 
-const admTrueSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admTrueSucessRequestBody')
-const productSucessRequestBody = require('../../fixtures/requestBodies/productBodies/productSucessRequestBody')
-
+const admTrueBodySucess = userPostRequestBody('true')
+const productBodySucess = productPostRequestBody()
 let authorization = 'string'
 let productId = ''
 
 before(() => {
-  cy.sendRequestPostUser(admTrueSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admTrueSucessRequestBody.email, admTrueSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
 })
@@ -22,8 +17,7 @@ before(() => {
 describe('Testes do endpoint GET /produtos/{_id}', () => {
   context('Cenários de sucesso', () => {
     it('Cadastrar um produto para as consultas', () => {
-      cy.sendRequestPostProduct(authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(201)
+      cy.createProductDataSet(authorization, productBodySucess).then((response) => {
         productId = response.body._id
       })
     })
@@ -31,7 +25,7 @@ describe('Testes do endpoint GET /produtos/{_id}', () => {
     it('Buscar por um produto com ID existente', () => {
       cy.sendRequestGetOneProduct(productId).should((response) => {
         expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
+        expect(response.body).to.have.property('nome', productBodySucess.nome)
       })
     })
   })
@@ -57,34 +51,34 @@ describe('Testes do endpoint (Lista) GET /produtos/?{parameter}={value}', () => 
     })
 
     it('Buscar por produtos com o parâmetro Nome', () => {
-      cy.sendRequestGetListProduct(`?nome=${productSucessRequestBody.nome}`).should((response) => {
+      cy.sendRequestGetListProduct(`?nome=${productBodySucess.nome}`).should((response) => {
         expect(response.status).to.equal(200)
         expect(response.body).to.have.property('quantidade', 1)
-        expect(response.body.produtos[0].nome).to.equal(productSucessRequestBody.nome)
+        expect(response.body.produtos[0].nome).to.equal(productBodySucess.nome)
       })
     })
 
     it('Buscar por produtos com o parâmetro Preço', () => {
-      cy.sendRequestGetListProduct(`?preco=${productSucessRequestBody.preco}`).should((response) => {
+      cy.sendRequestGetListProduct(`?preco=${productBodySucess.preco}`).should((response) => {
         expect(response.status).to.equal(200)
         expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.produtos[0].preco).to.equal(productSucessRequestBody.preco)
+        expect(response.body.produtos[0].preco).to.equal(productBodySucess.preco)
       })
     })
 
     it('Buscar por produtos com o parâmetro Descrição', () => {
-      cy.sendRequestGetListProduct(`?descricao=${productSucessRequestBody.descricao}`).should((response) => {
+      cy.sendRequestGetListProduct(`?descricao=${productBodySucess.descricao}`).should((response) => {
         expect(response.status).to.equal(200)
         expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.produtos[0].descricao).to.equal(productSucessRequestBody.descricao)
+        expect(response.body.produtos[0].descricao).to.equal(productBodySucess.descricao)
       })
     })
 
     it('Buscar por produtos com o parâmetro Quantidade', () => {
-      cy.sendRequestGetListProduct(`?quantidade=${productSucessRequestBody.quantidade}`).should((response) => {
+      cy.sendRequestGetListProduct(`?quantidade=${productBodySucess.quantidade}`).should((response) => {
         expect(response.status).to.equal(200)
         expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.produtos[0].quantidade).to.equal(productSucessRequestBody.quantidade)
+        expect(response.body.produtos[0].quantidade).to.equal(productBodySucess.quantidade)
       })
     })
 

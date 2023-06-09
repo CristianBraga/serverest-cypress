@@ -1,34 +1,18 @@
-import '../../requests/usersRequest'
-import '../../requests/loginRequest'
 import '../../requests/productRequest'
 import '../../requests/cartRequest'
+import '../../support/dataSet/makeDataSet'
+import userPostRequestBody from '../../support/requestBodies/userPostRequestBody'
+import productPostRequestBody from '../../support/requestBodies/productPostRequestBody'
+import cartBodyFunction from '../../support/dataSet/cartBody'
 
-const admTrueSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admTrueSucessRequestBody')
-const productSucessRequestBody = require('../../fixtures/requestBodies/productBodies/productSucessRequestBody')
-
+const admTrueBodySucess = userPostRequestBody('true')
+const productBodySucess = productPostRequestBody()
 let authorization = 'string'
 let productId = ''
-
-let cartBody = {
-  produtos: []
-}
-let cartBodyProductDuplicate = {
-  produtos: []
-}
-let cartBodyNonExistentProduct = {
-  produtos: []
-}
-let cartBodyInsufficientAmountProduct = {
-  produtos: []
-}
+let cartBody = {}
 
 before(() => {
-  cy.sendRequestPostUser(admTrueSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admTrueSucessRequestBody.email, admTrueSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
 })
@@ -36,30 +20,13 @@ before(() => {
 describe('Testes do endpoint POST /carrinhos', () => {
   context('Cenários de sucesso', () => {
     it('Cadastrar um produto para adicionar ao carrinho', () => {
-      cy.sendRequestPostProduct(authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(201)
+      cy.createProductDataSet(authorization, productBodySucess).then((response) => {
         productId = response.body._id
-        let product = {
-          idProduto: productId,
-          quantidade: 1
-        }
-        let nonExistentProduct = {
-          idProduto: '0',
-          quantidade: 1
-        }
-        let insufficientAmountProduct = {
-          idProduto: productId,
-          quantidade: 101
-        }
-        cartBody.produtos.push(product)
-        cartBodyProductDuplicate.produtos.push(product)
-        cartBodyProductDuplicate.produtos.push(product)
-        cartBodyNonExistentProduct.produtos.push(nonExistentProduct)
-        cartBodyInsufficientAmountProduct.produtos.push(insufficientAmountProduct)
       })
     })
 
     it('cadastrar um novo carrinho', () => {
+      cartBody = cartBodyFunction('sucess', productId)
       cy.sendRequestPostCart(authorization, cartBody).should((response) => {
         expect(response.status).to.equal(201)
         expect(response.body).to.have.property('message', 'Cadastro realizado com sucesso')
@@ -84,20 +51,24 @@ describe('Testes do endpoint POST /carrinhos', () => {
     })
 
     it('Tentar cadastrar um carrinho com produto duplicado', () => {
-      cy.sendRequestPostCart(authorization, cartBodyProductDuplicate).should((response) => {
+      cartBody = cartBodyFunction('productDuplicate', productId)
+      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
         expect(response.status).to.equal(400)
         expect(response.body).to.have.property('message', 'Não é permitido possuir produto duplicado')
       })
     })
 
     it('Tentar cadastrar um carrinho com produto inexistente', () => {
-      cy.sendRequestPostCart(authorization, cartBodyNonExistentProduct).should((response) => {
+      cartBody = cartBodyFunction('nonExistentProduct', '01')
+      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
         expect(response.status).to.equal(400)
         expect(response.body).to.have.property('message', 'Produto não encontrado')
       })
     })
+
     it('Tentar cadastrar um carrinho com produto que não possui quantidade suficiente', () => {
-      cy.sendRequestPostCart(authorization, cartBodyInsufficientAmountProduct).should((response) => {
+      cartBody = cartBodyFunction('insufficientAmountProduct', productId)
+      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
         expect(response.status).to.equal(400)
         expect(response.body).to.have.property('message', 'Produto não possui quantidade suficiente')
       })

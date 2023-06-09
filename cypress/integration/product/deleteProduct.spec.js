@@ -1,34 +1,20 @@
-import '../../requests/usersRequest'
-import '../../requests/loginRequest'
 import '../../requests/productRequest'
-import {
-  faker
-} from '@faker-js/faker'
+import '../../support/dataSet/makeDataSet'
+import userPostRequestBody from '../../support/requestBodies/userPostRequestBody'
+import productPostRequestBody from '../../support/requestBodies/productPostRequestBody'
 
-const admTrueSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admTrueSucessRequestBody')
-const admFalseSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admFalseSucessRequestBody')
-const productSucessRequestBody = require('../../fixtures/requestBodies/productBodies/productSucessRequestBody')
-
+const admTrueBodySucess = userPostRequestBody('true')
+const admFalseBodySucess = userPostRequestBody('false')
+const productBodySucess = productPostRequestBody()
 let authorization = 'string'
 let authorizationNotAdm = 'string'
 let productId = ''
 
 before(() => {
-  cy.sendRequestPostUser(admTrueSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admTrueSucessRequestBody.email, admTrueSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
-
-  cy.sendRequestPostUser(admFalseSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admFalseSucessRequestBody.email, admFalseSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserLoginDataSet(admFalseBodySucess).then((response) => {
     authorizationNotAdm = response.body.authorization
   })
 })
@@ -36,8 +22,7 @@ before(() => {
 describe('Testes do endpoint DELETE /produtos/{_id}', () => {
   context('Cenários de sucesso', () => {
     it('Cadastrar um produto para a exclusão', () => {
-      cy.sendRequestPostProduct(authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(201)
+      cy.createProductDataSet(authorization, productBodySucess).then((response) => {
         productId = response.body._id
       })
     })
@@ -53,7 +38,7 @@ describe('Testes do endpoint DELETE /produtos/{_id}', () => {
   context('Cenários de falha', () => {
     it('Tentar excluir um produto com ID inexistente', () => {
       cy.sendRequestDeleteProduct('01', authorization).should((response) => {
-        expect(response.status).to.equal(200)
+        expect(response.status).to.equal(404)
         expect(response.body).to.have.property('message', 'Nenhum registro excluído')
       })
     })
