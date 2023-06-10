@@ -1,34 +1,23 @@
-import '../../requests/usersRequest'
-import '../../requests/loginRequest'
 import '../../requests/productRequest'
+import '../../support/dataSet/makeDataSet'
+import userPostRequestBody from '../../support/requestBodies/userPostRequestBody'
+import productPostRequestBody from '../../support/requestBodies/productPostRequestBody'
 import {
   faker
 } from '@faker-js/faker'
 
-const admTrueSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admTrueSucessRequestBody')
-const admFalseSucessRequestBody = require('../../fixtures/requestBodies/usersBodies/admFalseSucessRequestBody')
-const productSucessRequestBody = require('../../fixtures/requestBodies/productBodies/productSucessRequestBody')
-
+const admTrueBodySucess = userPostRequestBody('true')
+const admFalseBodySucess = userPostRequestBody('false')
+const productBodySucess = productPostRequestBody()
 let authorization = 'string'
 let authorizationNotAdm = 'string'
 let productId = ''
 
 before(() => {
-  cy.sendRequestPostUser(admTrueSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admTrueSucessRequestBody.email, admTrueSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserAndLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
-
-  cy.sendRequestPostUser(admFalseSucessRequestBody).should((response) => {
-    expect(response.status).to.equal(201)
-  })
-  cy.sendRequestPostLogin(admFalseSucessRequestBody.email, admFalseSucessRequestBody.password).should((response) => {
-    expect(response.status).to.equal(200)
-    expect(response.body.authorization).to.not.be.empty
+  cy.createUserAndLoginDataSet(admFalseBodySucess).then((response) => {
     authorizationNotAdm = response.body.authorization
   })
 })
@@ -36,150 +25,107 @@ before(() => {
 describe('Testes do endpoint PUT /produtos/{_id}', () => {
   context('Cenários de sucesso', () => {
     it('Cadastrar um produto para as edições', () => {
-      cy.sendRequestPostProduct(authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(201)
+      cy.createProductDataSet(authorization, productBodySucess).then((response) => {
         productId = response.body._id
       })
     })
 
     it('Editar o campo Nome de um produto', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
-        productSucessRequestBody['nome'] = `${faker.commerce.product()} ${faker.commerce.productAdjective()} ${faker.number.int({ min: 10000, max: 99999 })}`
+      let newValue = faker.string.uuid()
+
+      cy.helperPutProductConsultOneField(productId, 'nome', productBodySucess.nome).then(() => {
+        productBodySucess['nome'] = newValue
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro alterado com sucesso')
-      })
+      cy.sendRequestPutProductSucess(productId, authorization, productBodySucess)
 
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
-      })
+      cy.helperPutProductConsultOneField(productId, 'nome', newValue)
     })
 
     it('Editar o campo Preço de um produto', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('preco', productSucessRequestBody.preco)
-        productSucessRequestBody['preco'] = faker.number.int({
-          min: 100,
-          max: 1000
-        })
+      let newValue = faker.number.int({
+        min: 100,
+        max: 1000
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro alterado com sucesso')
+      cy.helperPutProductConsultOneField(productId, 'preco', productBodySucess.preco).then(() => {
+        productBodySucess['preco'] = newValue
       })
 
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('preco', productSucessRequestBody.preco)
-      })
+      cy.sendRequestPutProductSucess(productId, authorization, productBodySucess)
+
+      cy.helperPutProductConsultOneField(productId, 'preco', newValue)
     })
 
     it('Editar o campo Descrição de um produto', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('descricao', productSucessRequestBody.descricao)
-        productSucessRequestBody['descricao'] = faker.string.uuid()
+      let newValue = faker.string.uuid()
+
+      cy.helperPutProductConsultOneField(productId, 'descricao', productBodySucess.descricao).then(() => {
+        productBodySucess['descricao'] = newValue
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro alterado com sucesso')
-      })
+      cy.sendRequestPutProductSucess(productId, authorization, productBodySucess)
 
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('descricao', productSucessRequestBody.descricao)
-      })
+      cy.helperPutProductConsultOneField(productId, 'descricao', newValue)
     })
 
     it('Editar o campo Quantidade de um produto', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('quantidade', productSucessRequestBody.quantidade)
-        productSucessRequestBody['quantidade'] = faker.number.int({
-          min: 10,
-          max: 100
-        })
+      let newValue = faker.number.int({
+        min: 10,
+        max: 100
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro alterado com sucesso')
+      cy.helperPutProductConsultOneField(productId, 'quantidade', productBodySucess.quantidade).then(() => {
+        productBodySucess['quantidade'] = newValue
       })
 
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('quantidade', productSucessRequestBody.quantidade)
-      })
+      cy.sendRequestPutProductSucess(productId, authorization, productBodySucess)
+
+      cy.helperPutProductConsultOneField(productId, 'quantidade', newValue)
     })
 
     it('Editar todos os campos de um produto', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
-        expect(response.body).to.have.property('preco', productSucessRequestBody.preco)
-        expect(response.body).to.have.property('descricao', productSucessRequestBody.descricao)
-        expect(response.body).to.have.property('quantidade', productSucessRequestBody.quantidade)
-        productSucessRequestBody['nome'] = `${faker.commerce.product()} ${faker.commerce.productAdjective()} ${faker.number.int({ min: 10000, max: 99999 })}`
-        productSucessRequestBody['preco'] = faker.number.int({
+      let newValuesJson = {
+        nome: faker.string.uuid(),
+        preco: faker.number.int({
           min: 100,
           max: 1000
-        })
-        productSucessRequestBody['descricao'] = faker.string.uuid()
-        productSucessRequestBody['quantidade'] = faker.number.int({
+        }),
+        descricao: faker.string.uuid(),
+        quantidade: faker.number.int({
           min: 10,
           max: 100
         })
+      }
+
+      cy.helperPutProductConsultAllFields(productId, productBodySucess).then(() => {
+        productBodySucess['nome'] = newValuesJson.nome
+        productBodySucess['preco'] = newValuesJson.preco
+        productBodySucess['descricao'] = newValuesJson.descricao
+        productBodySucess['quantidade'] = newValuesJson.quantidade
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro alterado com sucesso')
-      })
+      cy.sendRequestPutProductSucess(productId, authorization, productBodySucess)
 
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
-        expect(response.body).to.have.property('preco', productSucessRequestBody.preco)
-        expect(response.body).to.have.property('descricao', productSucessRequestBody.descricao)
-        expect(response.body).to.have.property('quantidade', productSucessRequestBody.quantidade)
-      })
+      cy.helperPutProductConsultAllFields(productId, newValuesJson)
     })
   })
 
   context('Cenários de falha', () => {
-    it('Tentar enviar com o campo Nome vazio', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('nome', productSucessRequestBody.nome)
-        productSucessRequestBody['nome'] = ''
+    it('Tentar editar um produto enviando o campo Nome vazio', () => {
+      cy.helperPutProductConsultOneField(productId, 'nome', productBodySucess.nome).then(() => {
+        productBodySucess['nome'] = ''
       })
 
-      cy.sendRequestPutProduct(productId, authorization, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('nome', 'nome não pode ficar em branco')
-      })
+      cy.sendRequestPutProductExpectedFailure(productId, authorization, productBodySucess, 400, 'nome', 'nome não pode ficar em branco')
     })
 
     it('Tentar editar um produto com uma autorização inválida', () => {
-      cy.sendRequestPutProduct(productId, `${authorization}z`, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(401)
-        expect(response.body).to.have.property('message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
-      })
+      cy.sendRequestPutProductExpectedFailure(productId, `${authorization}z`, productBodySucess, 401, 'message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
     })
 
     it('Tentar editar um produto com a autenticação de um usuário básico', () => {
-      cy.sendRequestPutProduct(productId, authorizationNotAdm, productSucessRequestBody).should((response) => {
-        expect(response.status).to.equal(403)
-        expect(response.body).to.have.property('message', 'Rota exclusiva para administradores')
-      })
+      cy.sendRequestPutProductExpectedFailure(productId, authorizationNotAdm, productBodySucess, 403, 'message', 'Rota exclusiva para administradores')
     })
   })
 })

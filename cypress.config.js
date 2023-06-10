@@ -29,6 +29,7 @@ module.exports = defineConfig({
     }
   },
   env: {
-    baseUrl: 'https://serverest.dev'
+    baseUrl: 'https://serverest.dev',
+    userId: 'string'
   }
 })
