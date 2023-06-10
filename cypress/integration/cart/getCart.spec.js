@@ -14,7 +14,7 @@ let cartId = ''
 let cartBody = {}
 
 before(() => {
-  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
+  cy.createUserAndLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
 })
@@ -29,25 +29,19 @@ describe('Testes do endpoint GET /carrinhos/{_id}', () => {
 
     it('cadastrar um novo carrinho para as consultas', () => {
       cartBody = cartBodyFunction('sucess', productId)
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
+      cy.sendRequestPostCart(authorization, cartBody).then((response) => {
         cartId = response.body._id
       })
     })
 
     it('Buscar por um carrinho com ID existente', () => {
-      cy.sendRequestGetOneCart(cartId).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body.produtos[0]).to.have.property('idProduto', productId)
-      })
+      cy.sendRequestGetOneCartSucess(cartId, productId)
     })
   })
 
   context('Cenários de falha', () => {
     it('Buscar por um carrinho com ID inexistente', () => {
-      cy.sendRequestGetOneCart(`${cartId}_123`).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('message', 'Carrinho não encontrado')
-      })
+      cy.sendRequestGetOneCartExpectedFailure(`${cartId}_123`, 400, 'message', 'Carrinho não encontrado')
     })
   })
 })
@@ -55,52 +49,29 @@ describe('Testes do endpoint GET /carrinhos/{_id}', () => {
 describe('Testes do endpoint (Lista) GET /carrinhos/?{parameter}={value}', () => {
   context('Cenários de sucesso', () => {
     it('Buscar por carrinhos com o parâmetro ID', () => {
-      cy.sendRequestGetListCart(`?_id=${cartId}`).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('quantidade', 1)
-        expect(response.body.carrinhos[0].produtos[0].idProduto).to.equal(productId)
-      })
+      cy.sendRequestGetListCartSucess('_id', cartId)
     })
 
     it('Buscar por carrinhos com o parâmetro Preço Total', () => {
-      cy.sendRequestGetListCart(`?precoTotal=${productBodySucess.preco}`).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('quantidade', 1)
-        expect(response.body.carrinhos[0].produtos[0].idProduto).to.equal(productId)
-      })
+      cy.sendRequestGetListCartSucess('precoTotal', productBodySucess.preco)
     })
 
     it('Buscar por carrinhos com o parâmetro Quantidade Total', () => {
-      cy.sendRequestGetListCart(`?quantidadeTotal=${cartBody.produtos[0].quantidade}`).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.carrinhos).to.be.not.null
-      })
+      cy.sendRequestGetListCartSucess('quantidadeTotal', cartBody.produtos[0].quantidade)
     })
 
     it('Buscar por carrinhos com o parâmetro Id Usuário', () => {
-      cy.sendRequestGetListCart(`?idUsuario=${Cypress.env('userId')}`).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.carrinhos).to.be.not.null
-      })
+      cy.sendRequestGetListCartSucess('idUsuario', Cypress.env('userId'))
     })
 
     it('Buscar por carrinhos sem utilizar parâmetros', () => {
-      cy.sendRequestGetListCart('').should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body.quantidade).to.be.at.least(1)
-        expect(response.body.carrinhos).to.be.not.null
-      })
+      cy.sendRequestGetListCartWithoutParametersSucess()
     })
   })
 
   context('Cenários de falha', () => {
     it('Buscar por um carrinho com um parâmetro inexistente', () => {
-      cy.sendRequestGetListCart('?parametroInexistente=123').should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('parametroInexistente', 'parametroInexistente não é permitido')
-      })
+      cy.sendRequestGetListCartUserExpectedFailure('?parametroInexistente=123', 400, 'parametroInexistente', 'parametroInexistente não é permitido')
     })
   })
 })

@@ -1,6 +1,6 @@
 {
   "name": "serverest",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Projeto que contém a automação dos cenários de testes da aplicação serverest.dev",
   "main": "index.js",
   "scripts": {

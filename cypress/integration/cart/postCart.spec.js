@@ -6,14 +6,19 @@ import productPostRequestBody from '../../support/requestBodies/productPostReque
 import cartBodyFunction from '../../support/dataSet/cartBody'
 
 const admTrueBodySucess = userPostRequestBody('true')
+const admTrueBodySucessTwo = userPostRequestBody('true')
 const productBodySucess = productPostRequestBody()
 let authorization = 'string'
+let authorizationTwo = 'string'
 let productId = ''
 let cartBody = {}
 
 before(() => {
-  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
+  cy.createUserAndLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
+  })
+  cy.createUserAndLoginDataSet(admTrueBodySucessTwo).then((response) => {
+    authorizationTwo = response.body.authorization
   })
 })
 
@@ -27,58 +32,32 @@ describe('Testes do endpoint POST /carrinhos', () => {
 
     it('cadastrar um novo carrinho', () => {
       cartBody = cartBodyFunction('sucess', productId)
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(201)
-        expect(response.body).to.have.property('message', 'Cadastro realizado com sucesso')
-        expect(response.body._id).to.not.be.empty
-      })
+      cy.sendRequestPostCartSucess(authorization, cartBody)
     })
   })
 
   context('Cenários de falha', () => {
     it('Tentar cadastrar mais de um carrinho para o usuário', () => {
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('message', 'Não é permitido ter mais de 1 carrinho')
-      })
-    })
-
-    it('Excluir o carrinho do usuário para as próximas validações', () => {
-      cy.sendRequestDeleteCancelCart(authorization).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro excluído com sucesso. Estoque dos produtos reabastecido')
-      })
+      cy.sendRequestPostCartExpectedFailure(authorization, cartBody, 400, 'message', 'Não é permitido ter mais de 1 carrinho')
     })
 
     it('Tentar cadastrar um carrinho com produto duplicado', () => {
       cartBody = cartBodyFunction('productDuplicate', productId)
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('message', 'Não é permitido possuir produto duplicado')
-      })
+      cy.sendRequestPostCartExpectedFailure(authorizationTwo, cartBody, 400, 'message', 'Não é permitido possuir produto duplicado')
     })
 
     it('Tentar cadastrar um carrinho com produto inexistente', () => {
       cartBody = cartBodyFunction('nonExistentProduct', '01')
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('message', 'Produto não encontrado')
-      })
+      cy.sendRequestPostCartExpectedFailure(authorizationTwo, cartBody, 400, 'message', 'Produto não encontrado')
     })
 
     it('Tentar cadastrar um carrinho com produto que não possui quantidade suficiente', () => {
       cartBody = cartBodyFunction('insufficientAmountProduct', productId)
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(400)
-        expect(response.body).to.have.property('message', 'Produto não possui quantidade suficiente')
-      })
+      cy.sendRequestPostCartExpectedFailure(authorizationTwo, cartBody, 400, 'message', 'Produto não possui quantidade suficiente')
     })
 
     it('Tentar cadastrar um novo carrinho com uma autorização inválida', () => {
-      cy.sendRequestPostCart(`${authorization}z`, cartBody).should((response) => {
-        expect(response.status).to.equal(401)
-        expect(response.body).to.have.property('message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
-      })
+      cy.sendRequestPostCartExpectedFailure(`${authorizationTwo}z`, cartBody, 401, 'message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
     })
   })
 })

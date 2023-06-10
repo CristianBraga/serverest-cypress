@@ -12,7 +12,7 @@ let productId = ''
 let cartBody = {}
 
 before(() => {
-  cy.createUserLoginDataSet(admTrueBodySucess).then((response) => {
+  cy.createUserAndLoginDataSet(admTrueBodySucess).then((response) => {
     authorization = response.body.authorization
   })
 })
@@ -31,19 +31,13 @@ describe('Testes do endpoint DELETE /carrinhos/cancelar-compra', () => {
     })
 
     it('Excluir um carrinho existente', () => {
-      cy.sendRequestDeleteCancelCart(authorization).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro excluído com sucesso. Estoque dos produtos reabastecido')
-      })
+      cy.sendRequestDeleteCancelCart(authorization, 200, 'message', 'Registro excluído com sucesso. Estoque dos produtos reabastecido')
     })
   })
 
   context('Cenários de falha', () => {
     it('Tentar excluir um carrinho com uma autorização inválida', () => {
-      cy.sendRequestDeleteCancelCart(`${authorization}z`).should((response) => {
-        expect(response.status).to.equal(401)
-        expect(response.body).to.have.property('message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
-      })
+      cy.sendRequestDeleteCancelCart(`${authorization}z`, 401, 'message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
     })
   })
 })
@@ -51,30 +45,18 @@ describe('Testes do endpoint DELETE /carrinhos/cancelar-compra', () => {
 describe('Testes do endpoint DELETE /carrinhos/concluir-compra', () => {
   context('Cenários de sucesso', () => {
     it('cadastrar um novo carrinho', () => {
-      cy.sendRequestPostCart(authorization, cartBody).should((response) => {
-        expect(response.status).to.equal(201)
-        expect(response.body).to.have.property('message', 'Cadastro realizado com sucesso')
-        expect(response.body._id).to.not.be.empty
-      })
+      cy.sendRequestPostCart(authorization, cartBody)
     })
 
     it('Excluir um carrinho existente', () => {
-      cy.sendRequestGetOneProduct(productId).should((response) => {
-        expect(response.status).to.equal(200)
-      })
-      cy.sendRequestDeleteFinishCart(authorization).should((response) => {
-        expect(response.status).to.equal(200)
-        expect(response.body).to.have.property('message', 'Registro excluído com sucesso')
-      })
+      cy.sendRequestGetOneProductDataSet(productId)
+      cy.sendRequestDeleteFinishCart(authorization, 200, 'message', 'Registro excluído com sucesso')
     })
   })
 
   context('Cenários de falha', () => {
     it('Tentar excluir um carrinho com uma autorização inválida', () => {
-      cy.sendRequestDeleteFinishCart(`${authorization}z`).should((response) => {
-        expect(response.status).to.equal(401)
-        expect(response.body).to.have.property('message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
-      })
+      cy.sendRequestDeleteFinishCart(`${authorization}z`, 401, 'message', 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais')
     })
   })
 })
